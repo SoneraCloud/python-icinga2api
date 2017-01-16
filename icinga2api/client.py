@@ -217,6 +217,7 @@ class Client(object):
         self.objects = Objects(self)
         self.actions = Actions(self)
         self.events = Events(self)
+        self.config = Config(self)
         self.status = Status(self)
         self.version = icinga2api.__version__
 
@@ -1178,6 +1179,71 @@ class Events(Base):
         for event in self._get_message_from_stream(stream):
             yield event
 
+class Config(Base):
+    '''
+    Icinga 2 API Config class
+    '''
+
+    base_url_path = "/v1/config"
+
+    def create_package(self,
+                       name):
+        '''
+        create a config package
+
+        :param name: the name of the config package
+        :type name: string
+        '''
+        url_path = '{}/{}/{}'.format(
+            self.base_url_path,
+            'packages',
+            name
+        )
+        
+        return self._request('POST', url_path)
+
+    def delete_package(self,
+                       name):
+        '''
+        delete a config package
+
+        :param name: the name of the config package
+        :type name: string
+        '''
+        url_path = '{}/{}/{}'.format(
+            self.base_url_path,
+            'packages',
+            name
+        )
+        
+        return self._request('DELETE', url_path)
+
+    def upload_package(self,
+                       name,
+                       files):
+        '''
+        upload configuration file text to a package
+
+        :param name: the name of the config package
+        :type name: string
+        :param files: dictonary of filename and content
+        :type files: dict
+        '''
+
+        url_path = '{}/{}/{}'.format(
+            self.base_url_path,
+            'stages',
+            name
+        )
+
+        '''
+        For now, no validation of the files dict. It should be like
+        { 'filename1': 'file content', 'filename2': 'other content' }
+        '''
+        payload = {}
+        payload['files'] = files
+
+        return self._request('POST', url_path, payload)
 
 class Status(Base):
     '''
