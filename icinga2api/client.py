@@ -11,6 +11,7 @@ import logging
 import os
 import requests
 import sys
+import json
 # pylint: disable=import-error,no-name-in-module
 if sys.version_info >= (3, 0):
     from urllib.parse import urljoin
@@ -32,9 +33,10 @@ class Icinga2ApiException(Exception):
     Icinga 2 API exception class
     '''
 
-    def __init__(self, error):
+    def __init__(self, error, result=None):
         super(Icinga2ApiException, self).__init__(error)
         self.error = error
+        self.result = result
 
     def __str__(self):
         return str(self.error)
@@ -318,7 +320,7 @@ class Base(object):
                     response.url,
                     response.status_code,
                     response.text,
-                ))
+                ), response.text)
 
         if stream:
             return response
@@ -1217,7 +1219,15 @@ class Config(Base):
         :param name: the name of the config package
         :type name: string
         '''
-        return self._mod_package(name)
+        try:
+          result = self._mod_package(name)
+        except icinga2api.client.Icinga2ApiException as e:
+          #if json.loads(e.result)['results'][0]['code'] == 200.0:
+          if True:
+            return e.result
+          else:
+            raise
+        return result
 
     def delete_package(self,
                        name):
@@ -1311,7 +1321,7 @@ class Config(Base):
     def get_stage_errors(self,
                          package_name,
                          stage_name):
-        return self.get_stage_file(package_name, stage_namge, 'startup.log')
+        return self.get_stage_file(package_name, stage_name, 'startup.log')
 
     def upload_package(self,
                        name,
