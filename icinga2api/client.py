@@ -1186,13 +1186,17 @@ class Config(Base):
 
     base_url_path = "/v1/config"
 
-    def create_package(self,
-                       name):
+    def _mod_package(self,
+                     name,
+                     req='POST'):
+        
         '''
-        create a config package
+        create or delete a config package
 
         :param name: the name of the config package
         :type name: string
+        :param req: POST or DELETE HTTP type
+        :type req: string
         '''
         url_path = '{}/{}/{}'.format(
             self.base_url_path,
@@ -1200,7 +1204,20 @@ class Config(Base):
             name
         )
         
-        return self._request('POST', url_path)
+        return self._request(req, url_path)
+
+    def create_package(self,
+                       name):
+        '''
+        create a config package
+
+        example 1:
+        create_package('test')
+
+        :param name: the name of the config package
+        :type name: string
+        '''
+        return self._mod_package(name)
 
     def delete_package(self,
                        name):
@@ -1210,26 +1227,24 @@ class Config(Base):
         :param name: the name of the config package
         :type name: string
         '''
-        url_path = '{}/{}/{}'.format(
+        return self._mod_package(name, 'DELETE')
+
+    def list_packages(self):
+        '''
+        list all packages
+        '''
+        url_path = '{}/{}'.format(
             self.base_url_path,
-            'packages',
-            name
+            'packages'
         )
         
-        return self._request('DELETE', url_path)
+        return self._request('GET', url_path)
 
-    def upload_package(self,
-                       name,
-                       files):
-        '''
-        upload configuration file text to a package
-
-        :param name: the name of the config package
-        :type name: string
-        :param files: dictonary of filename and content
-        :type files: dict
-        '''
-
+    def _mod_packages(self,
+                      name,
+                      files=None,
+                      req='GET'):
+        
         url_path = '{}/{}/{}'.format(
             self.base_url_path,
             'stages',
@@ -1241,9 +1256,79 @@ class Config(Base):
         { 'filename1': 'file content', 'filename2': 'other content' }
         '''
         payload = {}
-        payload['files'] = files
+        if files:
+          payload['files'] = files
 
-        return self._request('POST', url_path, payload)
+        return self._request(req, url_path, payload)
+
+    def list_stage_files(self,
+                         package_name,
+                         stage_name):
+        '''
+        list files within a specified stage
+
+        example 1:
+        list_stage_files('test','test-1484644527-0')
+
+        :param package_name: the name of the config package
+        :type package_name: string
+        :param stage_name: the name of the stage
+        :type stage_name: string
+        '''
+
+        url_path = '{}/{}/{}/{}'.format(
+            self.base_url_path,
+            'stages',
+            package_name,
+            stage_name
+        )
+        return self._request('GET', url_path)
+
+    def get_stage_file(self,
+                       package_name,
+                       stage_name,
+                       file_name):
+        '''
+        get file within a specified stage
+
+        :param package_name: the name of the config package
+        :type package_name: string
+        :param stage_name: the name of the stage
+        :type stage_name: string
+        :param file_name: the name of the file
+        :type file_name: string
+        '''
+
+        url_path = '{}/{}/{}/{}/{}'.format(
+            self.base_url_path,
+            'files',
+            package_name,
+            stage_name,
+            file_name
+        )
+        return self._request('GET', url_path, stream=True)
+
+    def get_stage_errors(self,
+                         package_name,
+                         stage_name):
+        return self.get_stage_file(package_name, stage_namge, 'startup.log')
+
+    def upload_package(self,
+                       name,
+                       files):
+        '''
+        upload configuration file to a package
+
+        example 1:
+        upload_package('test',{'config.d/test.conf':'testing'})
+
+        :param name: the name of the config package
+        :type name: string
+        :param files: dictonary of filename and content
+        :type files: dict
+        '''
+
+        return self._mod_packages(name, files, 'POST')
 
 class Status(Base):
     '''
